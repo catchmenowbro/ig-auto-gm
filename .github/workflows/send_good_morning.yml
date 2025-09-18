@@ -1,0 +1,46 @@
+name: Send Good Morning DM
+
+on:
+  schedule:
+    - cron: '30 0 * * *'   # 06:00 AM IST
+  workflow_dispatch: {}    # Manual run ke liye
+
+jobs:
+  send_dm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install instagrapi
+
+      - name: Send Good Morning DM
+        env:
+          IG_USERNAME: ${{ secrets.IG_USERNAME }}
+          IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
+        run: |
+          python - <<EOF
+          from instagrapi import Client
+          import os
+
+          username = os.environ["IG_USERNAME"]
+          password = os.environ["IG_PASSWORD"]
+
+          cl = Client()
+          cl.login(username, password)
+
+          # dost ka username yaha daal
+          target_username = "catchmenowbro"  
+
+          user_id = cl.user_id_from_username(target_username)
+          cl.direct_send("Good Morning 🌞", [user_id])
+
+          print("✅ Message sent successfully!")
+          EOF
