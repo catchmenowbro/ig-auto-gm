@@ -1,0 +1,30 @@
+name: Send Good Morning DM
+
+on:
+  schedule:
+    - cron: '30 0 * * *'   # Runs daily at 00:30 UTC => 06:00 IST
+  workflow_dispatch: {}    # Allows manual run (for testing)
+
+jobs:
+  send_dm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Send DM
+        env:
+          IG_USERNAME: ${{ secrets.IG_USERNAME }}
+          IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
+          FRIEND_USERNAME: ${{ secrets.FRIEND_USERNAME }}
+          MESSAGE: ${{ secrets.MESSAGE }}
+        run: python send_dm.py
