@@ -2,8 +2,8 @@ name: Send Good Morning DM
 
 on:
   schedule:
-    - cron: '30 0 * * *'   # Runs daily at 00:30 UTC => 06:00 IST
-  workflow_dispatch: {}    # Allows manual run (for testing)
+    - cron: '30 0 * * *'   # 00:30 UTC => 06:00 IST
+  workflow_dispatch: {}    # manual run for testing
 
 jobs:
   send_dm:
@@ -19,9 +19,18 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install instagrapi
 
-      - name: Send DM
+      - name: Restore saved session (optional)
+        run: |
+          if [ -n "${{ secrets.IG_SESSION_B64 }}" ]; then
+            echo "${{ secrets.IG_SESSION_B64 }}" | base64 --decode > insta_settings.json
+            echo "Session file restored"
+          else
+            echo "No saved session secret found, will login fresh"
+          fi
+
+      - name: Run send_dm
         env:
           IG_USERNAME: ${{ secrets.IG_USERNAME }}
           IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
