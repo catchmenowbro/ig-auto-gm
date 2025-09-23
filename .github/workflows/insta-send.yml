@@ -1,0 +1,54 @@
+name: Instagram Auto DM (use encrypted session)
+
+on:
+  schedule:
+    - cron: "30 22 * * *"   # daily 04:00 IST -> 22:30 UTC (previous day)
+  workflow_dispatch:
+
+jobs:
+  send_message:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (get session.enc)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Decrypt session.enc -> session.json (if exists)
+        env:
+          SESSION_ENC_KEY: ${{ secrets.SESSION_ENC_KEY }}
+        run: |
+          if [ -f session.enc ]; then
+            set +e
+            openssl enc -d -aes-256-cbc -pbkdf2 -in session.enc -out session.json -pass pass:"$SESSION_ENC_KEY"
+            rc=$?
+            set -e
+            if [ $rc -ne 0 ]; then
+              echo "Decrypt failed — session.enc may be invalid or key wrong"
+              rm -f session.json || true
+            else
+              echo "Decrypted session.json"
+            fi
+          else
+            echo "No session.enc found — will fallback to credentials"
+          fi
+
+      - name: Run DM script
+        env:
+          IG_USERNAME: ${{ secrets.IG_USERNAME }}
+          IG_PASSWORD: ${{ secrets.IG_PASSWORD }}
+          IG_TARGET: ${{ secrets.IG_TARGET }}
+          IG_MESSAGE: ${{ secrets.IG_MESSAGE }}
+        run: |
+          python safe_send_dm.py
